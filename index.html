@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Clientes</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --input-bg: #2a2a2a;
+      --text-color: #e0e0e0;
+      --border-color: #444;
+      --highlight: #4caf50;
+      --highlight-hover: #45a049;
+      --error: #f44336;
+      --success: #4caf50;
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2em;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .form-container {
+      background-color: var(--card-bg);
+      padding: 2em;
+      border-radius: 8px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+    }
+
+    label {
+      display: block;
+      margin-top: 1em;
+      margin-bottom: 1em;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 1em;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      border-radius: 4px;
+      font-size: 1em;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--highlight);
+    }
+
+    button {
+      margin-top: 1.5em;
+      padding: 0.8em 1.5em;
+      font-size: 1rem;
+      background-color: var(--highlight);
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: var(--highlight-hover);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #mensagem {
+      margin-top: 2em;
+      text-align: center;
+    }
+
+    .box {
+      background: #fff;
+      color: #333;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: 30px auto;
+      font-family: Arial, sans-serif;
+      height: auto;
+    }
+
+    .box h1 {
+      font-size: 22px;
+      color: var(--highlight);
+    }
+
+    .box p {
+      font-size: 16px;
+      margin: 10px 0;
+    }
+
+    .box span {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Cadastro de Clientes (via JSON)</h2>
+
+  <form id="formulario" class="form-container">
+    <label for="jsonInput">Cole os dados dos clientes (formato JSON)</label>
+    <textarea id="jsonInput" rows="12" placeholder='[
+  {
+    "id_cliente": 1,
+    "fantasia": "Empresa A",
+    "telefone_celular": "11999999999",
+    "data_vencimento": "2025-07-30",
+    "perfil_cliente": "novo"
+  }
+]' required></textarea>
+
+    <button type="submit">Enviar</button>
+    <div id="mensagem"></div>
+  </form>
+
+  <script>
+    document.getElementById("formulario").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const input = document.getElementById("jsonInput").value.trim();
+      const botao = this.querySelector("button");
+      const mensagem = document.getElementById("mensagem");
+
+      botao.disabled = true;
+      botao.textContent = "Enviado...";
+      mensagem.textContent = "";
+      mensagem.style.color = "";
+
+      try {
+        const clientes = JSON.parse(input);
+        if (!Array.isArray(clientes)) throw new Error("O conteúdo não é uma array");
+
+        fetch("https://prod.alas-automation.com.br/webhook/lia-teste", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(clientes)
+        })
+        .then(res => {
+          if (!res.ok) throw new Error("Erro no envio");
+          return res.text();
+        })
+        .then(html => {
+          mensagem.innerHTML = html;
+
+          botao.disabled = false;
+          botao.textContent = "Enviar";
+        })
+        .catch(err => {
+          mensagem.textContent = "Falha ao enviar os dados.";
+          mensagem.style.color = "var(--error)";
+          botao.disabled = false;
+          botao.textContent = "Enviar";
+        });
+
+      } catch (error) {
+        mensagem.textContent = "JSON inválido. Verifique o formato.";
+        mensagem.style.color = "var(--error)";
+        botao.disabled = false;
+        botao.textContent = "Enviar";
+      }
+    });
+  </script>
+
+</body>
+</html>
