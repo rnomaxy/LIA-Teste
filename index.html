@@ -50,7 +50,7 @@
       text-align: center;
     }
 
-    textarea {
+    textarea, input {
       width: 100%;
       padding: 1em;
       background-color: var(--input-bg);
@@ -61,7 +61,7 @@
       resize: vertical;
     }
 
-    textarea:focus {
+    textarea:focus, input:focus {
       outline: none;
       border-color: var(--highlight);
     }
@@ -125,16 +125,36 @@
   <h2>Cadastro de Clientes (via JSON)</h2>
 
   <form id="formulario" class="form-container">
-    <label for="jsonInput">Cole os dados dos clientes (formato JSON)</label>
-    <textarea id="jsonInput" rows="12" placeholder='[
+    <label for="infoInput">Data que deseja simular</label>
+    <input
+      id="infoInput"
+      type="text"
+      placeholder='[ { "data_simulacao": "2025-07-27" } ]'
+      required
+    />
+
+    <label for="clientesInput">Lista de clientes</label>
+    <textarea
+      id="clientesInput"
+      rows="12"
+      placeholder='[
   {
     "id_cliente": 1,
     "fantasia": "Empresa A",
     "telefone_celular": "11999999999",
     "data_vencimento": "2025-07-30",
     "perfil_cliente": "novo"
+  },
+  {
+    "id_cliente": 2,
+    "fantasia": "Empresa B",
+    "telefone_celular": "11988888888",
+    "data_vencimento": "2025-08-05",
+    "perfil_cliente": "recorrente"
   }
-]' required></textarea>
+]'
+      required
+    ></textarea>
 
     <button type="submit">Enviar</button>
     <div id="mensagem"></div>
@@ -144,7 +164,8 @@
     document.getElementById("formulario").addEventListener("submit", function (e) {
       e.preventDefault();
 
-      const input = document.getElementById("jsonInput").value.trim();
+      const infoInput = document.getElementById("infoInput").value.trim();
+      const clientesInput = document.getElementById("clientesInput").value.trim();
       const botao = this.querySelector("button");
       const mensagem = document.getElementById("mensagem");
 
@@ -154,13 +175,22 @@
       mensagem.style.color = "";
 
       try {
-        const clientes = JSON.parse(input);
-        if (!Array.isArray(clientes)) throw new Error("O conteúdo não é uma array");
+        const info = JSON.parse(infoInput);
+        const clientes = JSON.parse(clientesInput);
 
-        fetch("https://prod.alas-automation.com.br/webhook/lia-teste", {
+        if (!Array.isArray(info) || !Array.isArray(clientes)) {
+          throw new Error("Os dados devem estar em arrays JSON.");
+        }
+
+        const body = {
+          info,
+          clientes
+        };
+
+        fetch("https://prod.alas-automation.com.br/webhook/teste-lia", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(clientes)
+          body: JSON.stringify(body)
         })
         .then(res => {
           if (!res.ok) throw new Error("Erro no envio");
@@ -168,7 +198,6 @@
         })
         .then(html => {
           mensagem.innerHTML = html;
-
           botao.disabled = false;
           botao.textContent = "Enviar";
         })
